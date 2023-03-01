@@ -125,8 +125,9 @@ void ViewerWidget::setPixel(int x, int y, const QColor& color)
 //Draw functions
 void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 {
-	double m = (end.y()-start.y()) / (double)(end.x() - start.x());
-	if (m == 0) m = DBL_MAX;
+	double m;
+	if ((double)(end.x() - start.x()) == 0) m = DBL_MAX;
+	else m = (end.y() - start.y()) / (double)(end.x() - start.x());
 
 	//riadiaca os je y
 	if (abs(m) >= 1)
@@ -136,10 +137,10 @@ void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 		// prvy bod, y suradnica je zaokruhlena, x zaokruhlim az pri vykresleni
 		double i[2] = { (double)start.x(), (int)(start.y() + 0.5) };
 
-		setPixel((int)(i[0]+0.5), i[1], color);
+		setPixel((int)(i[0] + 0.5), i[1], color);
 		while (i[1] != end.y())
 		{
-			i[0] += 1/m;
+			i[0] += 1 / m;
 			i[1]++;
 			setPixel((int)(i[0] + 0.5), i[1], color);
 		}
@@ -149,23 +150,24 @@ void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 		if (start.x() > end.x())
 			swap_points(start, end);
 		// prvy bod, x suradnica je zaokruhlena, y zaokruhlim az pri vykresleni
-		double i[2] = {	(int)(start.x()+0.5), (double)start.y() };
+		double i[2] = { (int)(start.x() + 0.5), (double)start.y() };
 
-		setPixel(i[0], (int)(i[1]+0.5), color);
+		setPixel(i[0], (int)(i[1] + 0.5), color);
 		while (i[0] != end.x())
 		{
 			i[0]++;
 			i[1] += m;
 			setPixel(i[0], (int)(i[1] + 0.5), color);
-		}	
+		}
 	}
 	update();
 }
 
 void ViewerWidget::drawLineBres(QPoint start, QPoint end, QColor color)
 {
-	double m = (end.y() - start.y()) / (double)(end.x() - start.x());
-	if (m == 0) m = DBL_MAX;
+	double m;
+	if ((double)(end.x() - start.x())==0) m = DBL_MAX;
+	else m = (end.y() - start.y()) / (double)(end.x() - start.x());
 
 	//riadiaca os je y
 	if (m >= 1)
@@ -175,11 +177,11 @@ void ViewerWidget::drawLineBres(QPoint start, QPoint end, QColor color)
 
 		int k1 = 2 * (end.x() - start.x()),
 			k2 = 2 * (end.x() - start.x() - end.y() + start.y()),
-			p = 2*(end.x()-start.x())-end.y()+start.y();
+			p = 2 * (end.x() - start.x()) - end.y() + start.y();
 
 		int i[2] = { start.x(), start.y() };
 		setPixel(i[0], i[1], color);
-		
+
 		while (i[1] < end.y())
 		{
 			i[1]++;
@@ -276,11 +278,11 @@ void ViewerWidget::drawLineBres(QPoint start, QPoint end, QColor color)
 			setPixel(i[0], i[1], color);
 		}
 	}
-	
+
 	update();
 }
 
-void ViewerWidget::swap_points(QPoint &one, QPoint &two)
+void ViewerWidget::swap_points(QPoint& one, QPoint& two)
 {
 	QPoint tmp;
 	tmp.setX(one.x());
@@ -294,6 +296,8 @@ void ViewerWidget::swap_points(QPoint &one, QPoint &two)
 void ViewerWidget::clear()
 {
 	img->fill(Qt::white);
+	polygon.clear();
+	setpolygon_drawn(true);
 	update();
 }
 

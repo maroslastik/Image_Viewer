@@ -39,6 +39,8 @@ private:
 	bool openImage(QString filename);
 	bool saveImage(QString filename);
 
+	void draw_Polygon(ViewerWidget* w, QMouseEvent* e);
+
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionSave_as_triggered();

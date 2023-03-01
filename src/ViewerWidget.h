@@ -11,6 +11,11 @@ private:
 	bool drawLineActivated = false;
 	QPoint drawLineBegin = QPoint(0, 0);
 
+	bool drawing_polygon = false;
+	bool polygon_drawn = true;
+
+	QVector<QPoint> polygon;
+
 public:
 	ViewerWidget(QSize imgSize, QWidget* parent = Q_NULLPTR);
 	~ViewerWidget();
@@ -39,11 +44,17 @@ public:
 	uchar* getData() { return data; }
 	void setDataPtr() { data = img->bits(); }
 	void setPainter() { painter = new QPainter(img); }
+	void setdrawing_polygon(bool new_b) { drawing_polygon = new_b; }
+	void add_to_polygon(QPoint new_p) { polygon.append(new_p); }
+	void setpolygon_drawn(bool new_b) { polygon_drawn = new_b; }
 
 	int getImgWidth() { return img->width(); };
 	int getImgHeight() { return img->height(); };
+	bool getdrawing_polygon() { return drawing_polygon; }
+	QPoint get_point_polygon(int i) { return polygon[i]; }
+	bool getpolygon_drawn() { return polygon_drawn; }
 
-	void swap_points(QPoint &one, QPoint &two);
+	void swap_points(QPoint& one, QPoint& two);
 
 	void clear();
 

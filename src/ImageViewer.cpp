@@ -63,23 +63,15 @@ bool ImageViewer::ViewerWidgetEventFilter(QObject* obj, QEvent* event)
 void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
-	if (e->button() == Qt::LeftButton && ui->toolButtonDrawLine->isChecked())
+
+	if (!w->getpolygon_drawn())
 	{
-		if (w->getDrawLineActivated()) 
-		{
-			if(ui->comboBoxLineAlg->currentIndex()==0)
-				w->drawLineDDA(w->getDrawLineBegin(), e->pos(), globalColor);
-			else
-				w->drawLineBres(w->getDrawLineBegin(), e->pos(), globalColor);
-			w->setDrawLineActivated(false);
-		}
-		else 
-		{
-			w->setDrawLineBegin(e->pos());
-			w->setDrawLineActivated(true);
-			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
-			w->update();
-		}
+		// tu sa bude diat movement
+		return; 
+	}
+	else
+	{
+		draw_Polygon(w,e);
 	}
 }
 
@@ -135,6 +127,42 @@ bool ImageViewer::saveImage(QString filename)
 
 	QImage* img = vW->getImage();
 	return img->save(filename, extension.toStdString().c_str());
+}
+
+void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
+{
+	if (e->button() == Qt::LeftButton && ui->toolButtonDrawPolygon->isChecked())
+	{
+		if (w->getDrawLineActivated())
+		{
+			if (ui->comboBoxLineAlg->currentIndex() == 0)
+				w->drawLineDDA(w->getDrawLineBegin(), e->pos(), globalColor);
+			else
+				w->drawLineBres(w->getDrawLineBegin(), e->pos(), globalColor);
+			w->add_to_polygon(e->pos());
+			w->setDrawLineBegin(e->pos());
+		}
+		else
+		{
+			if (!w->getdrawing_polygon())
+				w->setdrawing_polygon(true);
+			w->setDrawLineBegin(e->pos());
+			w->setDrawLineActivated(true);
+			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
+			w->update();
+			w->add_to_polygon(e->pos());
+		}
+	}
+	else if (e->button() == Qt::RightButton && ui->toolButtonDrawPolygon->isChecked())
+	{
+		w->setDrawLineActivated(false);
+		w->setdrawing_polygon(false);
+		if (ui->comboBoxLineAlg->currentIndex() == 0)
+			w->drawLineDDA(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
+		else
+			w->drawLineBres(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
+		w->setpolygon_drawn(false);
+	}
 }
 
 //Slots
