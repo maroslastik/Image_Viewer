@@ -40,12 +40,15 @@ private:
 	bool saveImage(QString filename);
 
 	void draw_Polygon(ViewerWidget* w, QMouseEvent* e);
+	void redraw_Polygon(ViewerWidget* w);
 
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionSave_as_triggered();
 	void on_actionClear_triggered();
 	void on_actionExit_triggered();
+	void on_rotateButton_clicked() { vW->rotate_polygon(ui->spinBox_angle->value()*(M_PI/180)); redraw_Polygon(vW); };
+	void on_scaleButton_clicked() { vW->scale_polygon(ui->spinBox_scalar_x->value(), ui->spinBox_scalar_y->value()); redraw_Polygon(vW); }
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();

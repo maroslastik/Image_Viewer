@@ -282,6 +282,48 @@ void ViewerWidget::drawLineBres(QPoint start, QPoint end, QColor color)
 	update();
 }
 
+void ViewerWidget::rotate_polygon(float angle)
+{
+	if (angle > 0)
+	{
+		for (int i = 1; i < getpolygon_length(); i++)
+		{
+			set_polygon_point(i, QPoint
+				(
+					(polygon[i].x() - polygon[0].x()) * cos(angle) - (polygon[i].y() - polygon[0].y()) * sin(angle) + polygon[0].x(),
+					(polygon[i].x() - polygon[0].x()) * sin(angle) + (polygon[i].y() - polygon[0].y()) * cos(angle) + polygon[0].y()
+				)
+			);
+		}
+	}
+	else
+	{
+		angle -= angle*2;
+		for (int i = 1; i < getpolygon_length(); i++)
+		{
+			set_polygon_point(i, QPoint
+				(
+					(polygon[i].x() - polygon[0].x()) * cos(angle) + (polygon[i].y() - polygon[0].y()) * sin(angle) + polygon[0].x(),
+					-(polygon[i].x() - polygon[0].x()) * sin(angle) + (polygon[i].y() - polygon[0].y()) * cos(angle) + polygon[0].y()
+				)
+			);
+		}
+	}
+}
+
+void ViewerWidget::scale_polygon(float scalar_x, float scalar_y)
+{
+	for (int i = 0; i < getpolygon_length(); i++)
+	{
+		set_polygon_point(i, QPoint
+			(
+				polygon[i].x() * scalar_x,
+				polygon[i].y() * scalar_y
+			)
+		);
+	}
+}
+
 void ViewerWidget::swap_points(QPoint& one, QPoint& two)
 {
 	QPoint tmp;
@@ -296,8 +338,6 @@ void ViewerWidget::swap_points(QPoint& one, QPoint& two)
 void ViewerWidget::clear()
 {
 	img->fill(Qt::white);
-	polygon.clear();
-	setpolygon_drawn(true);
 	update();
 }
 

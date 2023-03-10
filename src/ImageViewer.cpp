@@ -64,12 +64,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
 
-	if (!w->getpolygon_drawn())
-	{
-		// tu sa bude diat movement
-		return; 
-	}
-	else
+	if (w->getpolygon_drawn())
 	{
 		draw_Polygon(w,e);
 	}
@@ -83,6 +78,20 @@ void ImageViewer::ViewerWidgetMouseButtonRelease(ViewerWidget* w, QEvent* event)
 void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
+	if (e->buttons() == Qt::LeftButton and !w->getpolygon_drawn())
+	{
+		w->clear();
+		QPoint displacement = e->pos() - w->getLastMousePosition();
+
+		for (int i = 0; i < w->getpolygon_length(); i++)
+		{
+			w->set_polygon_point(i, w->get_point_polygon(i) + displacement);
+		}
+
+		redraw_Polygon(w);
+
+		w->setLastMousePosition(e->pos());
+	}
 }
 
 void ImageViewer::ViewerWidgetLeave(ViewerWidget* w, QEvent* event)
@@ -96,6 +105,15 @@ void ImageViewer::ViewerWidgetEnter(ViewerWidget* w, QEvent* event)
 void ImageViewer::ViewerWidgetWheel(ViewerWidget* w, QEvent* event)
 {
 	QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+	QPoint delta = wheelEvent->angleDelta();
+	if (delta.y() > 0) {
+		vW->scale_polygon(1.1, 1.1);
+	}
+	else if (delta.y() < 0) {
+		vW->scale_polygon(0.9, 0.9);
+	}
+	
+	redraw_Polygon(vW);
 }
 
 //ImageViewer Events
@@ -162,6 +180,18 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 		else
 			w->drawLineBres(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
 		w->setpolygon_drawn(false);
+	}
+}
+
+void ImageViewer::redraw_Polygon(ViewerWidget* w)
+{
+	w->clear();
+	for (int i = 0; i < w->getpolygon_length(); i++)
+	{
+		w->drawLineDDA(
+			w->get_point_polygon(i),
+			w->get_point_polygon((i + 1) % w->getpolygon_length()),
+			globalColor);
 	}
 }
 

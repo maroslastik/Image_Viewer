@@ -1,5 +1,6 @@
 #pragma once
 #include <QtWidgets>
+
 class ViewerWidget :public QWidget {
 	Q_OBJECT
 private:
@@ -13,6 +14,7 @@ private:
 
 	bool drawing_polygon = false;
 	bool polygon_drawn = true;
+	QPoint lastMousePosition;
 
 	QVector<QPoint> polygon;
 
@@ -47,12 +49,19 @@ public:
 	void setdrawing_polygon(bool new_b) { drawing_polygon = new_b; }
 	void add_to_polygon(QPoint new_p) { polygon.append(new_p); }
 	void setpolygon_drawn(bool new_b) { polygon_drawn = new_b; }
+	void set_polygon_point(int i, QPoint new_p) { polygon[i].setX(new_p.x()); polygon[i].setY(new_p.y()); }
+	QPoint getLastMousePosition() const { return lastMousePosition; }
+	void setLastMousePosition(const QPoint& pos) { lastMousePosition = pos; }
 
 	int getImgWidth() { return img->width(); };
 	int getImgHeight() { return img->height(); };
 	bool getdrawing_polygon() { return drawing_polygon; }
 	QPoint get_point_polygon(int i) { return polygon[i]; }
 	bool getpolygon_drawn() { return polygon_drawn; }
+	int getpolygon_length() { return polygon.size(); }
+
+	void rotate_polygon(float angle);
+	void scale_polygon(float scalar_x, float scalar_y);
 
 	void swap_points(QPoint& one, QPoint& two);
 
