@@ -68,6 +68,10 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	{
 		draw_Polygon(w,e);
 	}
+	else
+	{
+		w->setLastMousePosition(e->pos());
+	}
 }
 
 void ImageViewer::ViewerWidgetMouseButtonRelease(ViewerWidget* w, QEvent* event)
@@ -78,17 +82,51 @@ void ImageViewer::ViewerWidgetMouseButtonRelease(ViewerWidget* w, QEvent* event)
 void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
-	if (e->buttons() == Qt::LeftButton and !w->getpolygon_drawn())
-	{
-		w->clear();
+
+	if (e->buttons() == Qt::LeftButton && !w->getpolygon_drawn()) {
+		w->clear_canvas();
+
 		QPoint displacement = e->pos() - w->getLastMousePosition();
-
-		for (int i = 0; i < w->getpolygon_length(); i++)
+		// if its line
+		if (w->get_polygon_length() == 1)
 		{
-			w->set_polygon_point(i, w->get_point_polygon(i) + displacement);
+			qDebug() << ":)";
 		}
+		else if (w->get_polygon_length() == 2)
+		{
+			w->set_polygon_point(0, w->get_point_polygon(0) + displacement);
+			w->set_polygon_point(1, w->get_point_polygon(1) + displacement);
 
-		redraw_Polygon(w);
+			if (!w->isInside(w->get_point_polygon(0).x(), w->get_point_polygon(0).y()) && 
+				!w->isInside(w->get_point_polygon(1).x(), w->get_point_polygon(1).y()))
+			{
+				return;
+			}
+			
+			redraw_Polygon(vW, w->trim_line());
+		}
+		else // if its polygon
+		{
+			for (int i = 0; i < w->get_polygon_length(); i++)
+			{
+				w->set_polygon_point(i, w->get_point_polygon(i) + displacement);
+			}
+
+			bool trim = false;
+			for (int j = 0; j < vW->get_polygon_length(); j++)
+			{
+				if (!w->isInside(w->get_point_polygon(j).x(), w->get_point_polygon(j).y()))
+					trim = true;
+			}
+
+			if (trim)
+			{
+				QVector<QPoint> X = w->trim_polygon();
+				redraw_Polygon(vW, X);
+			}
+			else
+				redraw_Polygon(vW, w->get_polygon());
+		}
 
 		w->setLastMousePosition(e->pos());
 	}
@@ -106,17 +144,18 @@ void ImageViewer::ViewerWidgetWheel(ViewerWidget* w, QEvent* event)
 {
 	QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
 	QPoint delta = wheelEvent->angleDelta();
-	if (delta.y() > 0) {
+	if (delta.y() > 0)
 		vW->scale_polygon(1.1, 1.1);
-	}
-	else if (delta.y() < 0) {
+	else if (delta.y() < 0)
 		vW->scale_polygon(0.9, 0.9);
-	}
-	
-	redraw_Polygon(vW);
+
+	if (vW->get_polygon_length() == 2)
+		redraw_Polygon(vW, vW->trim_line());
+	else
+		redraw_Polygon(vW, vW->trim_polygon());
 }
 
-//ImageViewer Events
+//ImageViewer Event
 void ImageViewer::closeEvent(QCloseEvent* event)
 {
 	if (QMessageBox::Yes == QMessageBox::question(this, "Close Confirmation", "Are you sure you want to exit?", QMessageBox::Yes | QMessageBox::No))
@@ -180,18 +219,16 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 		else
 			w->drawLineBres(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
 		w->setpolygon_drawn(false);
+		w->setLastMousePosition(e->pos());
 	}
 }
 
-void ImageViewer::redraw_Polygon(ViewerWidget* w)
+void ImageViewer::redraw_Polygon(ViewerWidget* w, QVector<QPoint> polyg)
 {
-	w->clear();
-	for (int i = 0; i < w->getpolygon_length(); i++)
+	w->clear_canvas();
+	for (int i = 0; i < w->get_polygon_length(); i++)
 	{
-		w->drawLineDDA(
-			w->get_point_polygon(i),
-			w->get_point_polygon((i + 1) % w->getpolygon_length()),
-			globalColor);
+		w->drawLineDDA(polyg[i], polyg[(i + 1) % polyg.size()], globalColor);
 	}
 }
 
@@ -254,4 +291,50 @@ void ImageViewer::on_pushButtonSetColor_clicked()
 		ui->pushButtonSetColor->setStyleSheet(style_sheet);
 		globalColor = newColor;
 	}
+}
+
+void ImageViewer::on_rotateButton_clicked() 
+{
+	vW->rotate_polygon(ui->spinBox_angle->value() * (M_PI / 180), vW->get_polygon()); 
+	
+		if (vW->get_polygon_length() == 2)
+			redraw_Polygon(vW, vW->trim_line());
+		else
+			redraw_Polygon(vW, vW->trim_polygon());
+}
+
+void ImageViewer::on_scaleButton_clicked() 
+{ 
+	vW->scale_polygon(ui->spinBox_scalar_x->value(), ui->spinBox_scalar_y->value()); 
+	if (vW->get_polygon_length() == 2)
+		redraw_Polygon(vW, vW->trim_line());
+	else
+		redraw_Polygon(vW, vW->trim_polygon());
+}
+
+void ImageViewer::on_symmX_clicked()
+{
+	vW->scale_polygon(-1, 1);
+	if (vW->get_polygon_length() == 2)
+		redraw_Polygon(vW, vW->trim_line());
+	else
+		redraw_Polygon(vW, vW->trim_polygon());
+}
+
+void ImageViewer::on_symmY_clicked()
+{
+	vW->scale_polygon(1, -1);
+	if (vW->get_polygon_length() == 2)
+		redraw_Polygon(vW, vW->trim_line());
+	else
+		redraw_Polygon(vW, vW->trim_polygon());
+}
+
+void ImageViewer::on_shearDXbutton_clicked()
+{
+	vW->shear_polygon(ui->shearDX->value());
+	if (vW->get_polygon_length() == 2)
+		redraw_Polygon(vW, vW->trim_line());
+	else
+		redraw_Polygon(vW, vW->trim_polygon());
 }

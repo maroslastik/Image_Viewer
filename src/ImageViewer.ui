@@ -221,9 +221,16 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="symmX">
              <property name="text">
-              <string>Symmetry by x</string>
+              <string>By x</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="symmY">
+             <property name="text">
+              <string>By y</string>
              </property>
             </widget>
            </item>
@@ -237,15 +244,44 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="QSpinBox" name="spinBox_4"/>
+            <widget class="QDoubleSpinBox" name="shearDX">
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="minimum">
+              <double>-2.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>2.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.100000000000000</double>
+             </property>
+             <property name="value">
+              <double>0.500000000000000</double>
+             </property>
+            </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinBox_3"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_4">
+            <widget class="QPushButton" name="shearDXbutton">
              <property name="text">
-              <string>PushButton</string>
+              <string>Shear X</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_8">
+          <property name="title">
+           <string>Fill:</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>Fill polygon</string>
              </property>
             </widget>
            </item>

@@ -282,16 +282,16 @@ void ViewerWidget::drawLineBres(QPoint start, QPoint end, QColor color)
 	update();
 }
 
-void ViewerWidget::rotate_polygon(float angle)
+void ViewerWidget::rotate_polygon(float angle, QVector<QPoint> polyg)
 {
 	if (angle > 0)
 	{
-		for (int i = 1; i < getpolygon_length(); i++)
+		for (int i = 1; i < get_polygon_length(); i++)
 		{
 			set_polygon_point(i, QPoint
 				(
-					(polygon[i].x() - polygon[0].x()) * cos(angle) - (polygon[i].y() - polygon[0].y()) * sin(angle) + polygon[0].x(),
-					(polygon[i].x() - polygon[0].x()) * sin(angle) + (polygon[i].y() - polygon[0].y()) * cos(angle) + polygon[0].y()
+					(polyg[i].x() - polyg[0].x()) * cos(angle) - (polyg[i].y() - polyg[0].y()) * sin(angle) + polyg[0].x(),
+					(polyg[i].x() - polyg[0].x()) * sin(angle) + (polyg[i].y() - polyg[0].y()) * cos(angle) + polyg[0].y()
 				)
 			);
 		}
@@ -299,12 +299,12 @@ void ViewerWidget::rotate_polygon(float angle)
 	else
 	{
 		angle -= angle*2;
-		for (int i = 1; i < getpolygon_length(); i++)
+		for (int i = 1; i < get_polygon_length(); i++)
 		{
 			set_polygon_point(i, QPoint
 				(
-					(polygon[i].x() - polygon[0].x()) * cos(angle) + (polygon[i].y() - polygon[0].y()) * sin(angle) + polygon[0].x(),
-					-(polygon[i].x() - polygon[0].x()) * sin(angle) + (polygon[i].y() - polygon[0].y()) * cos(angle) + polygon[0].y()
+					(polyg[i].x() - polyg[0].x()) * cos(angle) + (polyg[i].y() - polyg[0].y()) * sin(angle) + polyg[0].x(),
+					-(polyg[i].x() - polyg[0].x()) * sin(angle) + (polyg[i].y() - polyg[0].y()) * cos(angle) + polyg[0].y()
 				)
 			);
 		}
@@ -313,15 +313,183 @@ void ViewerWidget::rotate_polygon(float angle)
 
 void ViewerWidget::scale_polygon(float scalar_x, float scalar_y)
 {
-	for (int i = 0; i < getpolygon_length(); i++)
+	for (int i = 0; i < get_polygon_length(); i++)
 	{
+		QPoint S = polygon[0];
+		polygon[i] -= S;
+
 		set_polygon_point(i, QPoint
 			(
-				polygon[i].x() * scalar_x,
-				polygon[i].y() * scalar_y
+				(polygon[i].x()) * scalar_x,
+				(polygon[i].y()) * scalar_y
+			)
+		);
+
+		polygon[i] += S;
+	}
+}
+
+void ViewerWidget::shear_polygon(float dx)
+{
+	for (int i = 1; i < polygon.size(); i++)
+	{
+		set_polygon_point(i,
+			QPoint(
+				(polygon[i].x() - polygon[0].x()) + dx * (polygon[i].y() - polygon[0].y()),
+				(polygon[i].y() - polygon[0].y())
 			)
 		);
 	}
+}
+
+QVector<QPoint> ViewerWidget::trim_line()
+{
+	if (isInside(polygon[0].x(), polygon[0].y()) && isInside(polygon[1].x(), polygon[1].y()))
+	{
+		return polygon;
+	}
+
+	int width = this->width()-1;
+	int height = this->height()-1;
+	double tl = 0, tu = 1;
+	QPoint D(polygon[1] - polygon[0]);
+	QPoint E[] = { QPoint(0, 0), QPoint(0, height), QPoint(width, height), QPoint(width, 0) };
+	QVector<QPoint> new_line;
+	new_line.resize(2);
+
+	for (int i = 0; i < 4; i++)
+	{
+		QPoint W = (polygon[0]) - (E[i]);
+		QPoint N = QPoint(E[(i+1)%4].y() - E[i].y(), E[i].x() - E[(i + 1) % 4].x());
+		double DdotN = QPoint::dotProduct(D, N);
+		if (DdotN != 0)
+		{
+			double t = -QPoint::dotProduct(N,W) / DdotN;
+
+			if (DdotN > 0 && t <= 1) 
+			{
+				if (tl < t)
+					tl = t;
+			}
+			else if(DdotN < 0 && t >= 0)
+			{
+				if (tu > t)
+					tu = t;
+			}
+		}	
+	}
+	
+	if (tl == 0 && tu == 1)  return polygon;
+	else if (tl < tu)
+	{
+		new_line[0] = polygon[0] + D * tl;
+		new_line[1] = polygon[0] + D * tu;
+	}
+	// ked presiahnem hranicu x=0 alebo y=0 tak su hodnoty rovnake, ak x=xmax, y=ymax tak tl=0 tu=1
+	return new_line;
+}
+
+QVector<QPoint> ViewerWidget::trim_polygon()
+{
+	QVector<QPoint>	W = this->get_polygon(),
+	E = {	QPoint(0, 0),	
+			QPoint(width() - 1, 0), 
+			QPoint(width() - 1, height() - 1), 
+			QPoint(0, height() - 1) };
+
+	for (int k = 0; k < 4; k++)
+	{
+		W = trim_left_side(E[k].x(),W);
+
+		for (int i = 0; i < W.size(); i++)
+		{
+			W[i] = QPoint(W[i].y(), -W[i].x());
+		}
+		for (int i = 0; i < E.size(); i++)
+		{
+			E[i] = QPoint(E[i].y(), -E[i].x());
+		}
+	}
+	return W;
+}
+
+QVector<QPoint> ViewerWidget::trim_left_side(int xmin, QVector<QPoint> V)
+{
+	int	width = this->width() - 1,
+		height = this->height() - 1,
+		n = V.size();
+	QPoint S = V[n - 1];
+	QVector<QPoint> W = {};
+	for (int i = 0; i < n; i++)
+	{
+		if (V[i].x() >= xmin)
+		{
+			if (S.x() >= xmin)
+			{
+				W.push_back(V[i]);
+			}
+			else
+			{
+				QPoint P = QPoint(
+					xmin,
+					S.y() + ((xmin - S.x()) * ((V[i].y() - S.y()) / (V[i].x() - S.x())))
+				);
+				W.push_back(P);
+				W.push_back(V[i]);
+			}
+		}
+		else
+		{
+			if (S.x() >= xmin)
+			{
+				QPoint P = QPoint(
+					xmin,
+					S.y() + ((xmin - S.x()) * ((V[i].y() - S.y()) / (V[i].x() - S.x())))
+				);
+				W.push_back(P);
+			}
+		}
+		S = V[i];
+	}
+	return W;
+}
+
+void ViewerWidget::fill_polygon()
+{
+	if (polygon.size() == 3)
+	{
+		QVector<QPoint> T = polygon;
+		//std::sort(T.begin(), T.end(), pointLessThan);
+		if (T[0].y() == T[1].y())
+		{
+
+		}
+		else if (T[1].y() == T[2].y())
+		{
+
+		}
+		else
+		{
+			double m = (T[2].y()- T[0].y()) / (T[2].x() - T[0].x());
+			QPoint P = QPoint();
+		}
+	}
+}
+
+double ViewerWidget::max(double& one, double& two)
+{ 
+	if (one > two) 
+		return one; 
+	else 
+		return two; 
+}
+
+double ViewerWidget::min(double& one, double& two) 
+{
+	if (one < two) 
+		return one; 
+	else 
+		return two; 
 }
 
 void ViewerWidget::swap_points(QPoint& one, QPoint& two)
@@ -335,7 +503,23 @@ void ViewerWidget::swap_points(QPoint& one, QPoint& two)
 	two.setY(tmp.y());
 }
 
+bool ViewerWidget::is_polygon_inside(QVector<QPoint> P)
+{
+	for (int i = 0; i < P.size(); i++)
+		if (!isInside(P[i].x(), P[i].y()))
+			return false;
+		else
+			return true;
+}
+
 void ViewerWidget::clear()
+{
+	polygon.clear();
+	clear_canvas();
+	setpolygon_drawn(true);
+}
+
+void ViewerWidget::clear_canvas()
 {
 	img->fill(Qt::white);
 	update();
