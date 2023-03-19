@@ -64,9 +64,18 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
 
-	if (w->getpolygon_drawn())
+	if (w->get_object_drawn())
 	{
-		draw_Polygon(w,e);
+		if (ui->toolButtonDrawPolygon->isChecked())
+		{
+			draw_Polygon(w, e);
+			w->set_object_type('p');
+		}
+		else if (ui->circleButton->isChecked())
+		{
+			draw_circle(w, e);
+			w->set_object_type('c');
+		}
 	}
 	else
 	{
@@ -83,11 +92,19 @@ void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
 
-	if (e->buttons() == Qt::LeftButton && !w->getpolygon_drawn()) {
+	if (e->buttons() == Qt::LeftButton && !w->get_object_drawn()) {
 		w->clear_canvas();
 
 		QPoint displacement = e->pos() - w->getLastMousePosition();
 		// if its line
+		if (w->get_object_type() == 'c')
+		{
+			w->set_c_centre(w->get_c_centre() + displacement);
+			w->set_c_radius(w->get_c_radius() + displacement);
+
+			QPoint circle[2] = { w->get_c_centre(),w->get_c_radius() };
+			redraw_circle(w, circle);
+		}
 		if (w->get_polygon_length() == 1)
 		{
 			qDebug() << ":)";
@@ -188,7 +205,7 @@ bool ImageViewer::saveImage(QString filename)
 
 void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 {
-	if (e->button() == Qt::LeftButton && ui->toolButtonDrawPolygon->isChecked())
+	if (e->button() == Qt::LeftButton)
 	{
 		if (w->getDrawLineActivated())
 		{
@@ -201,8 +218,8 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 		}
 		else
 		{
-			if (!w->getdrawing_polygon())
-				w->setdrawing_polygon(true);
+			if (!w->get_drawing_object())
+				w->set_drawing_object(true);
 			w->setDrawLineBegin(e->pos());
 			w->setDrawLineActivated(true);
 			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
@@ -213,12 +230,12 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 	else if (e->button() == Qt::RightButton && ui->toolButtonDrawPolygon->isChecked())
 	{
 		w->setDrawLineActivated(false);
-		w->setdrawing_polygon(false);
+		w->set_drawing_object(false);
 		if (ui->comboBoxLineAlg->currentIndex() == 0)
 			w->drawLineDDA(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
 		else
 			w->drawLineBres(w->getDrawLineBegin(), w->get_point_polygon(0), globalColor);
-		w->setpolygon_drawn(false);
+		w->set_object_drawn(false);
 		w->setLastMousePosition(e->pos());
 	}
 }
@@ -230,6 +247,35 @@ void ImageViewer::redraw_Polygon(ViewerWidget* w, QVector<QPoint> polyg)
 	{
 		w->drawLineDDA(polyg[i], polyg[(i + 1) % polyg.size()], globalColor);
 	}
+}
+
+void ImageViewer::draw_circle(ViewerWidget* w, QMouseEvent* e)
+{
+	if (e->button() == Qt::LeftButton)
+	{
+		if (!w->get_c_drawn(0))
+		{
+			w->set_drawing_object(true);
+			w->set_c_centre(e->pos());
+			w->set_c_drawn(0, true);
+		}
+		else if (!w->get_c_drawn(1))
+		{
+			w->set_c_radius(e->pos());
+			w->set_drawing_object(false);
+			w->set_object_drawn(false);
+			w->set_c_drawn(1, true);
+			w->setLastMousePosition(e->pos());
+			QPoint circle[2] = { w->get_c_centre(),w->get_c_radius() };
+			redraw_circle(w, circle);
+		}
+	}
+}
+
+void ImageViewer::redraw_circle(ViewerWidget* w, QPoint circle[2])
+{
+	w->clear_canvas();
+	w->drawCircle(circle[0], circle[1], globalColor);
 }
 
 //Slots

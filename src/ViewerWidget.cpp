@@ -122,6 +122,18 @@ void ViewerWidget::setPixel(int x, int y, const QColor& color)
 	}
 }
 
+void ViewerWidget::setPixels_c(int x, int y, const QColor& color)
+{
+	setPixel(  x,  y, color);
+	setPixel(  x, -y, color);
+	setPixel( -x, -y, color);
+	setPixel( -x,  y, color);
+	setPixel(  y,  x, color);
+	setPixel(  y, -x, color);
+	setPixel( -y, -x, color);
+	setPixel( -y,  x, color);
+}
+
 //Draw functions
 void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 {
@@ -331,14 +343,18 @@ void ViewerWidget::scale_polygon(float scalar_x, float scalar_y)
 
 void ViewerWidget::shear_polygon(float dx)
 {
-	for (int i = 1; i < polygon.size(); i++)
+	dx *= -1;
+	for (int i = 0; i < polygon.size(); i++)
 	{
+		QPoint S = polygon[0];
+		polygon[i] -= S;
 		set_polygon_point(i,
 			QPoint(
-				(polygon[i].x() - polygon[0].x()) + dx * (polygon[i].y() - polygon[0].y()),
-				(polygon[i].y() - polygon[0].y())
+				polygon[i].x() + (int)(dx * (polygon[i].y() - polygon[0].y())+0.5),
+				polygon[i].y()
 			)
 		);
+		polygon[i] += S;
 	}
 }
 
@@ -397,9 +413,9 @@ QVector<QPoint> ViewerWidget::trim_polygon()
 			QPoint(width() - 1, height() - 1), 
 			QPoint(0, height() - 1) };
 
-	for (int k = 0; k < 4; k++)
+	for (int i = 0; i < 4; i++)
 	{
-		W = trim_left_side(E[k].x(),W);
+		W = trim_left_side(E[i].x(),W);
 
 		for (int i = 0; i < W.size(); i++)
 		{
@@ -516,13 +532,45 @@ void ViewerWidget::clear()
 {
 	polygon.clear();
 	clear_canvas();
-	setpolygon_drawn(true);
+	set_object_drawn(true);
+	set_c_drawn(0, false);
+	set_c_drawn(1, false);
 }
 
 void ViewerWidget::clear_canvas()
 {
 	img->fill(Qt::white);
 	update();
+}
+
+void ViewerWidget::drawCircle(QPoint centre, QPoint radius, QColor color)
+{
+	double r = get_c_length();
+	double p1 = 1 - r;
+	double x = 0, y = r;
+	double dvaX = 3, dvaY = 2 * r + 2;
+	while (x <= y)
+	{
+		int X = (int)(x + 0.5), Y = (int)(y+0.5);
+		setPixel( X + centre.x(),  Y + centre.y(), color);
+		setPixel( Y + centre.x(),  X + centre.y(), color);
+		setPixel( X + centre.x(), -Y + centre.y(), color);
+		setPixel(-Y + centre.x(),  X + centre.y(), color);
+		setPixel(-X + centre.x(), -Y + centre.y(), color);
+		setPixel(-X + centre.x(),  Y + centre.y(), color);
+		setPixel( Y + centre.x(), -X + centre.y(), color);
+		setPixel(-Y + centre.x(), -X + centre.y(), color);
+		
+		if (p1 > 0)
+		{
+			p1 -= dvaY;
+			y -= 1;
+			dvaY -= 2;
+		}
+		p1 += dvaX;
+		dvaX += 2;
+		x += 1;
+	}
 }
 
 //Slots

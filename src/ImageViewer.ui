@@ -98,10 +98,10 @@
      <item>
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
-        <string>Draw</string>
+        <string>Objects:</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
+       <layout class="QFormLayout" name="formLayout">
+        <item row="0" column="0">
          <widget class="QComboBox" name="comboBoxLineAlg">
           <item>
            <property name="text">
@@ -115,7 +115,14 @@
           </item>
          </widget>
         </item>
-        <item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="fillButton">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
          <widget class="QToolButton" name="toolButtonDrawPolygon">
           <property name="text">
            <string>Polygon</string>
@@ -124,6 +131,64 @@
            <bool>true</bool>
           </property>
          </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="circleButton">
+          <property name="text">
+           <string>Circle</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_9">
+       <property name="title">
+        <string>Curves:</string>
+       </property>
+       <layout class="QFormLayout" name="formLayout_2">
+        <item row="2" column="0">
+         <widget class="QSpinBox" name="spinBox"/>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QComboBox" name="comboBox">
+          <item>
+           <property name="text">
+            <string>Hermit cubic</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Bezier curve</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Coons B-spline</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Vector:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Angle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
         </item>
        </layout>
       </widget>

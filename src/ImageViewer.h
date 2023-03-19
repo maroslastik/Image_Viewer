@@ -42,6 +42,9 @@ private:
 	void draw_Polygon(ViewerWidget* w, QMouseEvent* e);
 	void redraw_Polygon(ViewerWidget* w, QVector<QPoint> polyg);
 
+	void draw_circle(ViewerWidget* w, QMouseEvent* e);
+	void redraw_circle(ViewerWidget* w, QPoint circle[2]);
+
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionSave_as_triggered();

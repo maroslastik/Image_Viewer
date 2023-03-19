@@ -1,5 +1,6 @@
 #pragma once
 #include <QtWidgets>
+#include <cmath>
 
 class ViewerWidget :public QWidget {
 	Q_OBJECT
@@ -12,13 +13,16 @@ private:
 	bool drawLineActivated = false;
 	QPoint drawLineBegin = QPoint(0, 0);
 
-	bool drawing_polygon = false;
-	bool polygon_drawn = true;
+	bool drawing_object = false;
+	bool object_drawn = true;
+	char object_type;
 
 	bool line_was_moved = false;
 	QPoint lastMousePosition;
 
 	QVector<QPoint> polygon;
+	QPoint circle[2];
+	bool circle_drawn[2] = { false,false };
 
 public:
 	ViewerWidget(QSize imgSize, QWidget* parent = Q_NULLPTR);
@@ -34,6 +38,7 @@ public:
 	void setPixel(int x, int y, uchar r, uchar g, uchar b, uchar a = 255);
 	void setPixel(int x, int y, double valR, double valG, double valB, double valA = 1.);
 	void setPixel(int x, int y, const QColor& color);
+	void setPixels_c(int x, int y, const QColor& color);
 	bool isInside(int x, int y) { return (x >= 0 && y >= 0 && x < img->width() && y < img->height()) ? true : false; }
 
 	//Draw functions
@@ -43,6 +48,7 @@ public:
 	QPoint getDrawLineBegin() { return drawLineBegin; }
 	void setDrawLineActivated(bool state) { drawLineActivated = state; }
 	bool getDrawLineActivated() { return drawLineActivated; }
+	void drawCircle(QPoint centre, QPoint radius, QColor color);
 
 	// Get/Set functions
 	uchar* getData() { return data; }
@@ -51,16 +57,20 @@ public:
 	int getImgWidth() { return img->width(); };
 	int getImgHeight() { return img->height(); };
 
+	void set_drawing_object(bool new_b) { drawing_object = new_b; }
+	bool get_drawing_object() { return drawing_object; }
+	void set_object_drawn(bool new_b) { object_drawn = new_b; }
+	bool get_object_drawn() { return object_drawn; }
+
+	void set_object_type(char new_ch) { object_type = new_ch; }
+	char get_object_type() { return object_type; }
+
 	// drawing polygon
-	void setdrawing_polygon(bool new_b) { drawing_polygon = new_b; }
 	void add_to_polygon(QPoint new_p) { polygon.append(new_p); }
-	void setpolygon_drawn(bool new_b) { polygon_drawn = new_b; }
 	void set_polygon_point(int i, QPoint new_p) { polygon[i].setX(new_p.x()); polygon[i].setY(new_p.y()); }
 	void set_polygon(const QVector<QPoint>& points) { polygon = points; }
 	QVector<QPoint> get_polygon() { return polygon; }
-	bool getdrawing_polygon() { return drawing_polygon; }
 	QPoint get_point_polygon(int i) { return polygon[i]; }
-	bool getpolygon_drawn() { return polygon_drawn; }
 	int get_polygon_length() { return polygon.size(); }
 
 	// moving polygon
@@ -77,6 +87,15 @@ public:
 	QVector<QPoint> trim_polygon();
 	QVector<QPoint> trim_left_side(int xmin, QVector<QPoint> V);
 	void fill_polygon();
+
+	// drawing circle
+	void set_c_centre(QPoint new_p) { circle[0] = new_p; }
+	void set_c_radius(QPoint new_p) { circle[1] = new_p; }
+	QPoint get_c_centre() { return circle[0]; }
+	QPoint get_c_radius() { return circle[1]; }
+	void set_c_drawn(int i, bool new_p) { circle_drawn[i] = new_p; }
+	bool get_c_drawn(int i) { return circle_drawn[i]; }
+	double get_c_length() { return sqrt(pow(circle[1].x() - circle[0].x(),2)+ pow(circle[1].y() - circle[0].y(), 2)); }
 
 	// helping functions
 	void swap_points(QPoint& one, QPoint& two);
