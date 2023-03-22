@@ -97,6 +97,9 @@ public:
 	bool get_c_drawn(int i) { return circle_drawn[i]; }
 	double get_c_length() { return sqrt(pow(circle[1].x() - circle[0].x(),2)+ pow(circle[1].y() - circle[0].y(), 2)); }
 
+	// transformations of circle
+	void scale_circle(float scalar);
+
 	// helping functions
 	void swap_points(QPoint& one, QPoint& two);
 	float dot_product(QPoint& one, QPoint& two) { return one.x() * two.x() + one.y() * two.y(); }

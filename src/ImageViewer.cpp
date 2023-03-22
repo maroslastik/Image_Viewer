@@ -66,7 +66,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 
 	if (w->get_object_drawn())
 	{
-		if (ui->toolButtonDrawPolygon->isChecked())
+		if (ui->polygonButton->isChecked())
 		{
 			draw_Polygon(w, e);
 			w->set_object_type('p');
@@ -93,7 +93,6 @@ void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
 
 	if (e->buttons() == Qt::LeftButton && !w->get_object_drawn()) {
-		w->clear_canvas();
 
 		QPoint displacement = e->pos() - w->getLastMousePosition();
 		// if its line
@@ -102,14 +101,9 @@ void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 			w->set_c_centre(w->get_c_centre() + displacement);
 			w->set_c_radius(w->get_c_radius() + displacement);
 
-			QPoint circle[2] = { w->get_c_centre(),w->get_c_radius() };
-			redraw_circle(w, circle);
+			redraw_circle(w,  w->get_c_centre(),w->get_c_radius());
 		}
-		if (w->get_polygon_length() == 1)
-		{
-			qDebug() << ":)";
-		}
-		else if (w->get_polygon_length() == 2)
+		else if (w->get_object_type() == 'p' && w->get_polygon_length() == 2)
 		{
 			w->set_polygon_point(0, w->get_point_polygon(0) + displacement);
 			w->set_polygon_point(1, w->get_point_polygon(1) + displacement);
@@ -122,7 +116,7 @@ void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 			
 			redraw_Polygon(vW, w->trim_line());
 		}
-		else // if its polygon
+		else if(w->get_object_type() == 'p')
 		{
 			for (int i = 0; i < w->get_polygon_length(); i++)
 			{
@@ -161,15 +155,26 @@ void ImageViewer::ViewerWidgetWheel(ViewerWidget* w, QEvent* event)
 {
 	QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
 	QPoint delta = wheelEvent->angleDelta();
-	if (delta.y() > 0)
-		vW->scale_polygon(1.1, 1.1);
-	else if (delta.y() < 0)
-		vW->scale_polygon(0.9, 0.9);
+	if (vW->get_object_type() == 'c')
+	{
+		if (delta.y() > 0)
+			vW->scale_circle(1.1);
+		else if (delta.y() < 0)
+			vW->scale_circle(0.9);
+		redraw_circle(vW, vW->get_c_centre(), vW->get_c_radius());
+	}
+	else if (vW->get_object_type() == 'p')
+	{
+		if (delta.y() > 0)
+			vW->scale_polygon(1.1, 1.1);
+		else if (delta.y() < 0)
+			vW->scale_polygon(0.9, 0.9);
 
-	if (vW->get_polygon_length() == 2)
-		redraw_Polygon(vW, vW->trim_line());
-	else
-		redraw_Polygon(vW, vW->trim_polygon());
+		if (vW->get_polygon_length() == 2)
+			redraw_Polygon(vW, vW->trim_line());
+		else
+			redraw_Polygon(vW, vW->trim_polygon());
+	}
 }
 
 //ImageViewer Event
@@ -227,7 +232,7 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 			w->add_to_polygon(e->pos());
 		}
 	}
-	else if (e->button() == Qt::RightButton && ui->toolButtonDrawPolygon->isChecked())
+	else if (e->button() == Qt::RightButton && ui->polygonButton->isChecked())
 	{
 		w->setDrawLineActivated(false);
 		w->set_drawing_object(false);
@@ -238,6 +243,7 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 		w->set_object_drawn(false);
 		w->setLastMousePosition(e->pos());
 	}
+	w->set_object_type('p');
 }
 
 void ImageViewer::redraw_Polygon(ViewerWidget* w, QVector<QPoint> polyg)
@@ -266,16 +272,25 @@ void ImageViewer::draw_circle(ViewerWidget* w, QMouseEvent* e)
 			w->set_object_drawn(false);
 			w->set_c_drawn(1, true);
 			w->setLastMousePosition(e->pos());
-			QPoint circle[2] = { w->get_c_centre(),w->get_c_radius() };
-			redraw_circle(w, circle);
+			redraw_circle(w, w->get_c_centre(), w->get_c_radius());
 		}
 	}
+	w->set_object_type('c');
 }
 
-void ImageViewer::redraw_circle(ViewerWidget* w, QPoint circle[2])
+void ImageViewer::redraw_circle(ViewerWidget* w, QPoint centre, QPoint radius)
 {
-	w->clear_canvas();
-	w->drawCircle(circle[0], circle[1], globalColor);
+	if (w->get_c_centre().x() - w->get_c_length() < 0 ||
+		w->get_c_centre().y() - w->get_c_length() < 0 ||
+		w->get_c_centre().x() + w->get_c_length() > 500 ||
+		w->get_c_centre().y() + w->get_c_length() > 500)
+		qDebug() << "kruh mimo";
+	else
+	{
+		w->clear_canvas();
+		w->drawCircle(centre, radius, globalColor);
+	}
+	
 }
 
 //Slots
@@ -351,11 +366,20 @@ void ImageViewer::on_rotateButton_clicked()
 
 void ImageViewer::on_scaleButton_clicked() 
 { 
-	vW->scale_polygon(ui->spinBox_scalar_x->value(), ui->spinBox_scalar_y->value()); 
-	if (vW->get_polygon_length() == 2)
-		redraw_Polygon(vW, vW->trim_line());
-	else
-		redraw_Polygon(vW, vW->trim_polygon());
+	if (vW->get_object_type() == 'p')
+	{
+		vW->scale_polygon(ui->spinBox_scalar_x->value(), ui->spinBox_scalar_y->value());
+		if (vW->get_polygon_length() == 2)
+			redraw_Polygon(vW, vW->trim_line());
+		else
+			redraw_Polygon(vW, vW->trim_polygon());
+	}
+	else if (vW->get_object_type() == 'c')
+	{
+		vW->scale_circle(ui->spinBox_scalar_x->value());
+		redraw_circle(vW, vW->get_c_centre(), vW->get_c_radius());
+	}
+	
 }
 
 void ImageViewer::on_symmX_clicked()

@@ -573,6 +573,22 @@ void ViewerWidget::drawCircle(QPoint centre, QPoint radius, QColor color)
 	}
 }
 
+void ViewerWidget::scale_circle(float scalar)
+{
+	
+	QPoint S = circle[0];
+	circle[1] -= S;
+
+	set_c_radius(QPoint
+		(
+			(circle[1].x()) * scalar,
+			(circle[1].y()) * scalar
+		)
+	);
+
+	circle[1] += S;
+}
+
 //Slots
 void ViewerWidget::paintEvent(QPaintEvent* event)
 {
