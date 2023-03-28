@@ -1,5 +1,9 @@
 #include   "ViewerWidget.h"
 
+bool compareEdgesByStartY(const EDGE& e1, const EDGE& e2);
+bool compareEdgesByStartX(const EDGE& e1, const EDGE& e2);
+bool compareEdgesByStartYX(const QPoint& p1, const QPoint& p2);
+
 ViewerWidget::ViewerWidget(QSize imgSize, QWidget* parent)
 	: QWidget(parent)
 {
@@ -431,9 +435,7 @@ QVector<QPoint> ViewerWidget::trim_polygon()
 
 QVector<QPoint> ViewerWidget::trim_left_side(int xmin, QVector<QPoint> V)
 {
-	int	width = this->width() - 1,
-		height = this->height() - 1,
-		n = V.size();
+	int	n = V.size();
 	QPoint S = V[n - 1];
 	QVector<QPoint> W = {};
 	for (int i = 0; i < n; i++)
@@ -470,25 +472,174 @@ QVector<QPoint> ViewerWidget::trim_left_side(int xmin, QVector<QPoint> V)
 	return W;
 }
 
-void ViewerWidget::fill_polygon()
+void ViewerWidget::fill_polygon(QColor color)
 {
-	if (polygon.size() == 3)
+	if (polygon.size() == 2 || polygon.size() == 1)
 	{
-		QVector<QPoint> T = polygon;
-		//std::sort(T.begin(), T.end(), pointLessThan);
-		if (T[0].y() == T[1].y())
+		return;
+	}
+	else if (polygon.size() == 3)
+	{
+		fill_triangle(polygon, color);
+		return;
+	}
+	QVector<QPoint> T = polygon;
+	QVector<EDGE> edges;
+		
+	// nastavenie hran
+	for (int i = 0; i < T.size(); i++)
+	{
+		QPoint start = T[i], end = T[(i + 1) % T.size()];
+		// odsrtranenie vodorovnych hran
+		if (start.y() == end.y())
+			continue;
+		// smerovanie zhora nadol
+		if (start.y() > end.y())
 		{
-
+			QPoint temp = start;
+			start = end;
+			end = temp;
 		}
-		else if (T[1].y() == T[2].y())
-		{
 
+		// odstranenie posledneho bodu
+		end.setY(end.y() - 1);
+
+		// nastavenie a pridanie hrany do pola hran
+		EDGE edge;
+		edge.start = start;
+		edge.end = end;
+		edge.dy = end.y() - start.y();
+		edge.x = (double)start.x();
+		edge.w = (double)(end.x() - start.x()) / (double)(end.y() - start.y());
+		edges.push_back(edge);
+	}
+
+	// zoradenie hran podla y suradnice
+	std::sort(edges.begin(), edges.end(), compareEdgesByStartY);
+
+	// nastavenie y_min a y_max
+	int y_min = edges[0].start.y();
+	int y_max = y_min;
+
+	for (int i = 0; i < edges.size(); i++)
+	{
+		if (edges[i].end.y() > y_max)
+		{
+			y_max = edges[i].end.y();
+		}
+	}
+
+	// vytvorenie tabulky hran TH
+	QVector<QList<EDGE>> TH;
+	TH.resize(y_max - y_min + 1);
+
+	for (int i = 0; i < edges.size(); i++)
+	{
+		TH[edges[i].start.y() - y_min].push_back(edges[i]);
+	}
+
+	QVector<EDGE> ZAH;
+	double y = y_min;
+
+	for (int i = 0; i < TH.size(); i++)
+	{
+		// presuvam z TH do ZAH
+		if (TH[i].size() != 0)
+		{
+			for (int j = 0; j < TH[i].size(); j++)
+			{
+				ZAH.push_back(TH[i][j]);
+			}
+		}
+
+		// zoradenie aktivnych hran podla x
+		std::sort(ZAH.begin(), ZAH.end(), compareEdgesByStartX);
+
+		// kreslenie ciar
+		for (int j = 0; j < ZAH.size(); j += 2)
+		{
+			if (ZAH[j].x != ZAH[j + 1].x)
+			{
+				drawLineDDA(QPoint(ZAH[j].x + 0.5, y), QPoint(ZAH[j + 1].x + 0.5, y), color);
+			}
+		}
+
+		// aktualizacia ZAH
+		for (int j = 0; j < ZAH.size(); j++)
+		{
+			if (ZAH[j].dy == 0)
+			{
+				ZAH.remove(j);
+				j--;
+			}
+			else
+			{
+				ZAH[j].x += ZAH[j].w;
+				ZAH[j].dy--;
+			}
+		}
+		y++;
+	}
+}
+
+void ViewerWidget::fill_triangle(QVector<QPoint> T, QColor color)
+{
+	std::sort(T.begin(), T.end(), compareEdgesByStartYX);
+
+	EDGE e1;
+	EDGE e2;
+
+	if (T[0].y() == T[1].y())
+	{
+		// spodny trojuh
+		e1.start = T[0];
+		e1.end = T[2];
+		e1.w = (double)(T[2].x() - T[0].x()) / (double)(T[2].y() - T[0].y());
+
+		e2.start = T[1];
+		e2.end = T[2];
+		e2.w = (double)(T[2].x() - T[1].x()) / (double)(T[2].y() - T[1].y());
+	}
+	else if (T[1].y() == T[2].y())
+	{
+		// horny trojuh
+		e1.start = T[0];
+		e1.end = T[1];
+		e1.w = (double)(T[1].x() - T[0].x()) / (double)(T[1].y() - T[0].y());
+
+		e2.start = T[0];
+		e2.end = T[2];
+		e2.w = (double)(T[2].x() - T[0].x()) / (double)(T[2].y() - T[0].y());
+	}
+	else
+	{
+		// rozdelime a rekurzivne vyplnime
+		double m = (double)(T[2].y() - T[0].y()) / (double)(T[2].x() - T[0].x());
+		QPoint P((double)(T[1].y() - T[0].y()) / m + T[0].x(), T[1].y());
+
+		if (T[1].x() < P.x())
+		{
+			fill_triangle({ T[0], T[1], P }, color);
+			fill_triangle({ T[1], P, T[2] }, color);
 		}
 		else
 		{
-			double m = (T[2].y()- T[0].y()) / (T[2].x() - T[0].x());
-			QPoint P = QPoint();
+			fill_triangle({ T[0], P, T[1] }, color);
+			fill_triangle({ P, T[1], T[2] }, color);
 		}
+		return;
+	}
+
+	double x1 = e1.start.x();
+	double x2 = e2.start.x();
+	for (int y = e1.start.y(); y < e1.end.y(); y++)
+	{
+		if (x1 != x2)
+		{
+			drawLineDDA(QPoint(x1 + 0.5, y), QPoint(x2 + 0.5, y), color);
+		}
+		x1 += e1.w;
+		x2 += e2.w;
 	}
 }
 
@@ -587,6 +738,23 @@ void ViewerWidget::scale_circle(float scalar)
 	);
 
 	circle[1] += S;
+}
+
+bool compareEdgesByStartY(const EDGE& e1, const EDGE& e2)
+{
+	return e1.start.y() < e2.start.y();
+}
+
+bool compareEdgesByStartX(const EDGE& e1, const EDGE& e2)
+{
+	return e1.start.x() < e2.start.x();
+}
+
+bool compareEdgesByStartYX(const QPoint& p1, const QPoint& p2)
+{
+	if (p1.y() == p2.y())
+		return p1.x() < p2.x();
+	return p1.y() < p2.y();
 }
 
 //Slots

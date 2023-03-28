@@ -2,6 +2,15 @@
 #include <QtWidgets>
 #include <cmath>
 
+struct EDGE
+{
+	QPoint start;
+	QPoint end;
+	int dy;
+	double x;
+	double w;
+};
+
 class ViewerWidget :public QWidget {
 	Q_OBJECT
 private:
@@ -86,7 +95,8 @@ public:
 	QVector<QPoint> trim_line();
 	QVector<QPoint> trim_polygon();
 	QVector<QPoint> trim_left_side(int xmin, QVector<QPoint> V);
-	void fill_polygon();
+	void fill_polygon(QColor color);
+	void fill_triangle(QVector<QPoint> T, QColor color);
 
 	// drawing circle
 	void set_c_centre(QPoint new_p) { circle[0] = new_p; }

@@ -249,7 +249,7 @@ void ImageViewer::draw_Polygon(ViewerWidget* w, QMouseEvent* e)
 void ImageViewer::redraw_Polygon(ViewerWidget* w, QVector<QPoint> polyg)
 {
 	w->clear_canvas();
-	for (int i = 0; i < w->get_polygon_length(); i++)
+	for (int i = 0; i < polyg.size(); i++)
 	{
 		w->drawLineDDA(polyg[i], polyg[(i + 1) % polyg.size()], globalColor);
 	}
@@ -280,17 +280,14 @@ void ImageViewer::draw_circle(ViewerWidget* w, QMouseEvent* e)
 
 void ImageViewer::redraw_circle(ViewerWidget* w, QPoint centre, QPoint radius)
 {
-	if (w->get_c_centre().x() - w->get_c_length() < 0 ||
+	if (!(w->get_c_centre().x() - w->get_c_length() < 0 ||
 		w->get_c_centre().y() - w->get_c_length() < 0 ||
 		w->get_c_centre().x() + w->get_c_length() > 500 ||
-		w->get_c_centre().y() + w->get_c_length() > 500)
-		qDebug() << "kruh mimo";
-	else
+		w->get_c_centre().y() + w->get_c_length() > 500))
 	{
 		w->clear_canvas();
 		w->drawCircle(centre, radius, globalColor);
 	}
-	
 }
 
 //Slots
@@ -407,4 +404,9 @@ void ImageViewer::on_shearDXbutton_clicked()
 		redraw_Polygon(vW, vW->trim_line());
 	else
 		redraw_Polygon(vW, vW->trim_polygon());
+}
+
+void ImageViewer::on_fillButton_clicked()
+{
+	vW->fill_polygon(globalColor);
 }

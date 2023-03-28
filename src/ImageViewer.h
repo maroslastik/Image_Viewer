@@ -52,7 +52,7 @@ private slots:
 	void on_actionExit_triggered();
 	void on_rotateButton_clicked();
 	void on_scaleButton_clicked();
-	void on_fillButton_clicked() { vW->fill_polygon(); }
+	void on_fillButton_clicked();
 	void on_symmX_clicked();
 	void on_symmY_clicked();
 	void on_shearDXbutton_clicked();
